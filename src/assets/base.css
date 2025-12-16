@@ -1,0 +1,67 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+  background: #ffffff;
+  background-attachment: fixed;
+  color: #1f2937;
+}
+
+#app {
+  min-height: 100vh;
+}
+
+/* Prevent text selection on buttons for better mobile UX */
+button {
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Custom color variables */
+:root {
+  --bg-white: #ffffff;
+  --text-dark: #1f2937;
+  --text-muted: #6b7280;
+  --blue-primary: #007AFF;
+  --blue-light: #3b82f6;
+  --border-color: #e5e7eb;
+  --ios-blue: #007AFF;
+}
+
+/* Card styles */
+.card-white {
+  background: #ffffff;
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+}
+
+/* Header styles */
+.header-white {
+  background: #ffffff;
+  border-bottom: 1px solid var(--border-color);
+  color: var(--text-dark);
+}
+
+/* iOS Blue text utility */
+.text-ios-blue {
+  color: #007AFF;
+}
