@@ -18,9 +18,9 @@ export default defineConfig({
       },
       includeAssets: ["favicon.ico"],
       manifest: {
-        name: "POS - Bun & Chai",
-        short_name: "Bun & Chai",
-        description: "Mobile POS System for Small Food Shop",
+        name: "Yummy Gut - POS",
+        short_name: "Yummy Gut - POS",
+        description: "Yummy Gut - POS System",
         theme_color: "#3b82f6",
         background_color: "#ffffff",
         display: "standalone",
