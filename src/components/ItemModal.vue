@@ -4,8 +4,8 @@
     :modal="true"
     :style="{ width: '100%', maxWidth: '100%' }"
     :pt="{
-      root: { class: 'bottom-0 left-0 right-0 fixed m-0 rounded-t-3xl' },
-      content: { class: 'rounded-t-3xl bg-white' }
+      root: { class: 'bottom-0 left-0 right-0 fixed m-0 rounded-t-[20px]' },
+      content: { class: 'rounded-t-[20px] bg-white' }
     }"
     @update:visible="$emit('close')"
   >
@@ -14,12 +14,6 @@
         <h2 class="text-xl font-bold text-gray-900">
           {{ item ? 'Edit Item' : 'Add Item' }}
         </h2>
-        <Button
-          icon="pi pi-times"
-          text
-          rounded
-          @click="$emit('close')"
-        />
       </div>
     </template>
 
@@ -50,6 +44,22 @@
           required
           class="w-full"
         />
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium mb-2 text-gray-700">
+          Display Order *
+        </label>
+        <InputNumber
+          v-model="formData.display_order"
+          :min="0"
+          placeholder="Order number (lower appears first)"
+          required
+          class="w-full"
+        />
+        <p class="text-xs text-gray-500 mt-1">
+          Items are displayed in POS screen based on this number (ascending order)
+        </p>
       </div>
 
       <div>
@@ -114,6 +124,7 @@ const emit = defineEmits(['close', 'save'])
 const formData = ref({
   name: '',
   price: 0,
+  display_order: 0,
   stock_quantity: null,
   is_active: true
 })
@@ -123,6 +134,7 @@ watch(() => props.item, (newItem) => {
     formData.value = {
       name: newItem.name,
       price: parseFloat(newItem.price),
+      display_order: newItem.display_order ?? 0,
       stock_quantity: newItem.stock_quantity,
       is_active: newItem.is_active
     }
@@ -130,6 +142,7 @@ watch(() => props.item, (newItem) => {
     formData.value = {
       name: '',
       price: 0,
+      display_order: 0,
       stock_quantity: null,
       is_active: true
     }
@@ -140,6 +153,7 @@ const handleSubmit = () => {
   const data = {
     name: formData.value.name.trim(),
     price: formData.value.price,
+    display_order: formData.value.display_order ?? 0,
     stock_quantity: formData.value.stock_quantity || null,
     is_active: formData.value.is_active
   }

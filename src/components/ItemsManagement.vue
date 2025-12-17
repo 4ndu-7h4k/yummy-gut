@@ -1,10 +1,20 @@
 <template>
-  <div class="min-h-screen bg-white pb-20">
+  <div class="min-h-screen bg-[#F5F5F7] pb-20">
     <!-- Header -->
-    <div class="header-white sticky top-0 z-10 shadow-sm">
-      <div class="px-6 py-4 flex items-center justify-between">
+    <div class=" sticky top-0 z-10 px-3 pt-1 bg-[#F5F5F7]">
+      <div class="flex items-center justify-between px-4 pt-3 pb-2">
         <h1 class="text-2xl font-bold text-gray-900">Items</h1>
         <div class="flex gap-3">
+          <Button
+            v-if="isSupported()"
+            :icon="isFullscreen ? 'pi pi-window-minimize' : 'pi pi-window-maximize'"
+            @click="toggleFullscreen"
+            severity="secondary"
+            size="small"
+            outlined
+            :pt="{ root: { class: 'px-2' } }"
+            v-tooltip.top="isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'"
+          />
           <Button
             label="Add"
             icon="pi pi-plus"
@@ -27,7 +37,7 @@
     </div>
 
     <!-- Items List -->
-    <div class="p-4 space-y-4">
+    <div class="p-4 space-y-4 bg-[#F5F5F7]">
       <div v-if="loading" class="text-center py-8 text-gray-600">
         <ProgressSpinner />
       </div>
@@ -43,7 +53,7 @@
       </div>
 
       <Card
-        v-for="item in items"
+        v-for="item in sortedItems"
         :key="item.id"
         class="card-white"
       >
@@ -55,6 +65,10 @@
                 <Tag
                   :value="item.is_active ? 'Active' : 'Inactive'"
                   :severity="item.is_active ? 'success' : 'danger'"
+                />
+                <Tag
+                  :value="`Order: ${item.display_order ?? 0}`"
+                  severity="info"
                 />
               </div>
               <p class="text-blue-600 font-bold text-xl mb-1">₹{{ parseFloat(item.price).toFixed(2) }}</p>
@@ -99,9 +113,10 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useItems } from '@/composables/useItems'
 import { useToast } from 'primevue/usetoast'
+import { useFullscreen } from '@/composables/useFullscreen'
 import Button from 'primevue/button'
 import Card from 'primevue/card'
 import Tag from 'primevue/tag'
@@ -110,10 +125,23 @@ import ItemModal from './ItemModal.vue'
 import BottomNav from './BottomNav.vue'
 
 const toast = useToast()
+const { isFullscreen, toggleFullscreen, isSupported } = useFullscreen()
 
 const { items, loading, fetchItems, addItem, updateItem, toggleItemActive } = useItems()
 const showAddModal = ref(false)
 const editingItem = ref(null)
+
+// Sort items by display_order for management screen
+const sortedItems = computed(() => {
+  return [...items.value].sort((a, b) => {
+    const orderA = a.display_order ?? 0
+    const orderB = b.display_order ?? 0
+    if (orderA !== orderB) {
+      return orderA - orderB
+    }
+    return (a.name || '').localeCompare(b.name || '')
+  })
+})
 
 onMounted(() => {
   fetchItems(true) // Include inactive items

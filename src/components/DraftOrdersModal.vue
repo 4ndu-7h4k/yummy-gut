@@ -4,8 +4,8 @@
     :modal="true"
     :style="{ width: '100%', maxWidth: '100%' }"
     :pt="{
-      root: { class: 'bottom-0 left-0 right-0 fixed m-0 rounded-t-3xl' },
-      content: { class: 'rounded-t-3xl max-h-[80vh] overflow-hidden flex flex-col bg-white' }
+      root: { class: 'bottom-0 left-0 right-0 fixed m-0 rounded-t-[20px]' },
+      content: { class: 'rounded-t-[20px] max-h-[80vh] overflow-hidden flex flex-col bg-white' }
     }"
     @update:visible="$emit('close')"
   >

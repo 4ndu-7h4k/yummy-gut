@@ -1,7 +1,7 @@
 <template>
   <div
     v-if="cart.length > 0"
-    class="fixed bottom-16 left-0 right-0 bg-white border-t border-gray-200 shadow-2xl z-20 safe-area-bottom"
+    class="fixed bottom-18 mx-3 left-0 right-0 bg-white z-20 safe-area-bottom rounded-[20px]"
   >
     <div class="px-6 py-4">
       <div class="flex items-center justify-between mb-4">
@@ -17,31 +17,30 @@
 
       <div class="flex gap-3">
         <Button
-          label="Clear"
           icon="pi pi-trash"
           @click="$emit('clear')"
-          severity="secondary"
+          severity="danger"
           outlined
           size="small"
-          class="flex-1"
+          class="flex-1 rounded-[999px]!"
         />
         <Button
-          label="Save"
           icon="pi pi-save"
           @click="$emit('save-draft')"
           severity="secondary"
           size="small"
           class="flex-1"
         />
-        <Button
-          :label="isEditing ? 'Update Order' : 'Place Order'"
-          icon="pi pi-check-circle"
-          @click="$emit('place-order')"
-          severity="primary"
-          size="small"
-          class="flex-1"
-        />
-      </div>
+          <Button
+            :label="isEditing ? 'Update Order' : 'Place Order'"
+            :icon="loading ? 'pi pi-spin pi-spinner' : 'pi pi-check-circle'"
+            @click="$emit('place-order')"
+            severity="primary"
+            size="small"
+            :disabled="loading"
+            class="flex-2 fle"
+          />
+        </div>
     </div>
   </div>
 </template>
@@ -63,6 +62,10 @@ defineProps({
     required: true
   },
   isEditing: {
+    type: Boolean,
+    default: false
+  },
+  loading: {
     type: Boolean,
     default: false
   }

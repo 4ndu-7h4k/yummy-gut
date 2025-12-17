@@ -6,6 +6,7 @@ import router from "./router";
 import PrimeVue from "primevue/config";
 import Aura from "@primeuix/themes/aura";
 import ToastService from "primevue/toastservice";
+import Tooltip from "primevue/tooltip";
 
 const app = createApp(App);
 
@@ -22,6 +23,9 @@ app.use(PrimeVue, {
 
 // Add Toast service
 app.use(ToastService);
+
+// Register Tooltip directive
+app.directive("tooltip", Tooltip);
 
 app.use(router);
 app.mount("#app");

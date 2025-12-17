@@ -1,23 +1,63 @@
 <template>
-  <div class="min-h-screen bg-white pb-20">
+  <div class="min-h-screen bg-[#F5F5F7] pb-20">
     <!-- Header -->
-    <div class="header-white sticky top-0 z-10 shadow-sm">
-      <div class="px-6 py-4 flex items-center justify-between">
+    <div class=" sticky top-0 z-10 px-3 pt-1 bg-[#F5F5F7]">
+      <div class="flex items-center justify-between px-4 pt-3 pb-2">
         <h1 class="text-2xl font-bold text-gray-900">Order History</h1>
-        <router-link to="/">
+        <div class="flex gap-3">
           <Button
-            label="POS"
-            icon="pi pi-shopping-cart"
+            v-if="isSupported()"
+            :icon="isFullscreen ? 'pi pi-window-minimize' : 'pi pi-window-maximize'"
+            @click="toggleFullscreen"
             severity="secondary"
             size="small"
             outlined
+            :pt="{ root: { class: 'px-2' } }"
+            v-tooltip.top="isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'"
           />
-        </router-link>
+          <router-link to="/">
+            <Button
+              label="POS"
+              icon="pi pi-shopping-cart"
+              severity="secondary"
+              size="small"
+              outlined
+            />
+          </router-link>
+        </div>
+      </div>
+      
+      <!-- Date Filter Buttons -->
+      <div class="flex gap-2 px-4 pb-3">
+        <Button
+          label="Today"
+          :severity="dateFilter === 'today' ? 'primary' : 'secondary'"
+          :outlined="dateFilter !== 'today'"
+          size="small"
+          @click="setDateFilter('today')"
+          class="flex-1"
+        />
+        <Button
+          label="Yesterday"
+          :severity="dateFilter === 'yesterday' ? 'primary' : 'secondary'"
+          :outlined="dateFilter !== 'yesterday'"
+          size="small"
+          @click="setDateFilter('yesterday')"
+          class="flex-1"
+        />
+        <Button
+          label="All"
+          :severity="dateFilter === 'all' ? 'primary' : 'secondary'"
+          :outlined="dateFilter !== 'all'"
+          size="small"
+          @click="setDateFilter('all')"
+          class="flex-1"
+        />
       </div>
     </div>
 
     <!-- Orders List -->
-    <div class="p-4 space-y-4">
+    <div class="p-4 space-y-4 bg-[#F5F5F7]">
       <div v-if="loading" class="text-center text-gray-600 py-8">
         <ProgressSpinner />
       </div>
@@ -77,24 +117,34 @@
 </template>
 
 <script setup>
-import { onMounted } from 'vue'
+import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useOrders } from '@/composables/useOrders'
 import { useCart } from '@/composables/useCart'
 import { useToast } from 'primevue/usetoast'
+import { useFullscreen } from '@/composables/useFullscreen'
 import Button from 'primevue/button'
 import Card from 'primevue/card'
 import ProgressSpinner from 'primevue/progressspinner'
 import BottomNav from './BottomNav.vue'
 
 const toast = useToast()
+const { isFullscreen, toggleFullscreen, isSupported } = useFullscreen()
 
 const router = useRouter()
 const { orders, loading, fetchOrders, deleteOrder, setEditingOrder } = useOrders()
 const { loadCart } = useCart()
 
+// Date filter state (default to 'today')
+const dateFilter = ref('today')
+
+const setDateFilter = async (filter) => {
+  dateFilter.value = filter
+  await fetchOrders(50, filter)
+}
+
 onMounted(() => {
-  fetchOrders()
+  fetchOrders(50, 'today')
 })
 
 const handleLoadOrder = (order) => {

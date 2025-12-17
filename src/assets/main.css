@@ -5,11 +5,12 @@
 /* Override PrimeVue colors to match white/blue theme */
 :root {
   --p-primary-color: #007AFF;
-  --p-primary-contrast-color: #ffffff;
-  --p-surface-0: #ffffff;
-  --p-surface-50: #f9fafb;
-  --p-surface-100: #f3f4f6;
+  --p-primary-contrast-color: #FFFFFF;
+  --p-surface-0: #FFFFFF;
+  --p-surface-50: #F5F5F7;
+  --p-surface-100: #F5F5F7;
   --p-text-color: #1f2937;
   --p-text-muted-color: #6b7280;
   --p-border-color: #e5e7eb;
+  --p-border-radius: 12px;
 }

@@ -1,12 +1,12 @@
 <template>
-  <Card class="card-white p-0">
+  <Card :class="['card-white p-0', { 'item-highlighted': quantity > 0 }]">
     <template #content>
       <div class="flex flex-col gap-3 ">
         <div class="flex-1">
           <h3 class="font-semibold text-lg mb-2 text-gray-900">{{ item.name }}</h3>
-          <p class="text-blue-600 font-bold text-xl mb-1">₹{{ parseFloat(item.price).toFixed(2) }}</p>
+          <p class="text-blue-600 font-bold text-xl mb-1">₹{{ item.price * quantity }}</p>
           <p v-if="item.stock_quantity !== null" class="text-xs text-gray-500">
-            Stock: {{ item.stock_quantity }}
+            Stock: {{ item.stock_quantity - quantity }} - <span class="text-lg font-bold text-green-600">₹{{ parseInt(item.price) }}</span>
           </p>
         </div>
 
@@ -19,7 +19,7 @@
             rounded
             size="small"
             outlined
-            class="w-12 h-12 flex-shrink-0"
+            class="w-12 h-12 flex-shrink-0 touch-manipulation"
           />
           
           <div class="flex-1 text-center min-w-[30px]">
@@ -33,14 +33,8 @@
             severity="primary"
             rounded
             size="small"
-            class="w-12 h-12 flex-shrink-0"
+            class="w-12 h-12 flex-shrink-0 touch-manipulation"
           />
-        </div>
-
-        <div v-if="quantity > 0" class="pt-3 border-t border-gray-200">
-          <p class="text-sm text-center text-gray-600">
-            Subtotal: <span class="font-semibold text-gray-900">₹{{ (item.price * quantity).toFixed(2) }}</span>
-          </p>
         </div>
       </div>
     </template>
@@ -64,3 +58,22 @@ defineProps({
 
 defineEmits(['add', 'remove'])
 </script>
+
+<style scoped>
+/* iOS-style smooth transitions */
+:deep(.p-card) {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.item-highlighted {
+  background: linear-gradient(135deg, #e3fdf5 0%, #f0fff5 100%) !important;
+}
+
+.item-highlighted :deep(.p-card-body) {
+  background: transparent !important;
+}
+
+.card-white {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+</style>

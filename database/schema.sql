@@ -11,6 +11,7 @@ CREATE TABLE items (
   price DECIMAL(10, 2) NOT NULL CHECK (price >= 0),
   is_active BOOLEAN DEFAULT true,
   stock_quantity INTEGER DEFAULT NULL,
+  display_order INTEGER DEFAULT 0 CHECK (display_order >= 0),
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -47,12 +48,24 @@ CREATE TABLE draft_orders (
   PRIMARY KEY (id)
 );
 
+-- QR codes table
+CREATE TABLE qr_codes (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  file_path VARCHAR(500),
+  public_url TEXT,
+  qr_text TEXT,
+  type VARCHAR(50) DEFAULT 'generated' CHECK (type IN ('generated', 'uploaded')),
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
 -- Indexes for better query performance
 CREATE INDEX idx_items_is_active ON items(is_active);
 CREATE INDEX idx_orders_created_at ON orders(created_at DESC);
 CREATE INDEX idx_order_items_order_id ON order_items(order_id);
 CREATE INDEX idx_order_items_item_id ON order_items(item_id);
 CREATE INDEX idx_draft_orders_created_at ON draft_orders(created_at DESC);
+CREATE INDEX idx_qr_codes_created_at ON qr_codes(created_at DESC);
 
 -- Function to update updated_at timestamp
 CREATE OR REPLACE FUNCTION update_updated_at_column()
@@ -73,12 +86,16 @@ CREATE TRIGGER update_orders_updated_at BEFORE UPDATE ON orders
 CREATE TRIGGER update_draft_orders_updated_at BEFORE UPDATE ON draft_orders
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+CREATE TRIGGER update_qr_codes_updated_at BEFORE UPDATE ON qr_codes
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
 -- Row Level Security (RLS) Policies
 -- Enable RLS on all tables
 ALTER TABLE items ENABLE ROW LEVEL SECURITY;
 ALTER TABLE orders ENABLE ROW LEVEL SECURITY;
 ALTER TABLE order_items ENABLE ROW LEVEL SECURITY;
 ALTER TABLE draft_orders ENABLE ROW LEVEL SECURITY;
+ALTER TABLE qr_codes ENABLE ROW LEVEL SECURITY;
 
 -- Policy: Allow all operations for authenticated users (adjust based on your auth setup)
 -- For now, we'll allow all operations (you can restrict later based on auth)
@@ -94,11 +111,14 @@ CREATE POLICY "Allow all operations on order_items" ON order_items
 CREATE POLICY "Allow all operations on draft_orders" ON draft_orders
   FOR ALL USING (true) WITH CHECK (true);
 
+CREATE POLICY "Allow all operations on qr_codes" ON qr_codes
+  FOR ALL USING (true) WITH CHECK (true);
+
 -- Sample data (optional - for testing)
-INSERT INTO items (name, price, is_active, stock_quantity) VALUES
-  ('Bun', 50.00, true, 100),
-  ('Chai', 30.00, true, 200),
-  ('Coffee', 40.00, true, 150),
-  ('Sandwich', 80.00, true, 50),
-  ('Samosa', 25.00, true, 200);
+INSERT INTO items (name, price, is_active, stock_quantity, display_order) VALUES
+  ('Bun', 50.00, true, 100, 1),
+  ('Chai', 30.00, true, 200, 2),
+  ('Coffee', 40.00, true, 150, 3),
+  ('Sandwich', 80.00, true, 50, 4),
+  ('Samosa', 25.00, true, 200, 5);
 

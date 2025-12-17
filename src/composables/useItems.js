@@ -21,11 +21,14 @@ export function useItems() {
       let query = supabase
         .from('items')
         .select('*')
-        .order('name', { ascending: true })
       
       if (!includeInactive) {
         query = query.eq('is_active', true)
       }
+      
+      // Order by display_order first, then by name as fallback
+      query = query.order('display_order', { ascending: true })
+                   .order('name', { ascending: true })
       
       const { data, error: fetchError } = await query
       
@@ -46,9 +49,19 @@ export function useItems() {
     }
   }
 
-  // Get active items only
+  // Get active items only, sorted by display_order
   const activeItems = computed(() => {
-    return items.value.filter(item => item.is_active)
+    return items.value
+      .filter(item => item.is_active)
+      .sort((a, b) => {
+        const orderA = a.display_order ?? 0
+        const orderB = b.display_order ?? 0
+        if (orderA !== orderB) {
+          return orderA - orderB
+        }
+        // If display_order is the same, sort by name
+        return (a.name || '').localeCompare(b.name || '')
+      })
   })
 
   // Add new item
@@ -61,6 +74,7 @@ export function useItems() {
         .insert([{
           name: itemData.name,
           price: itemData.price,
+          display_order: itemData.display_order ?? 0,
           is_active: itemData.is_active ?? true,
           stock_quantity: itemData.stock_quantity ?? null
         }])

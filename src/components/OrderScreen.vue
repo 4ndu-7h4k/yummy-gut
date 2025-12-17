@@ -1,10 +1,29 @@
 <template>
-  <div class="min-h-screen bg-white pb-20">
+  <div class="h-screen bg-[#F5F5F7] flex flex-col overflow-hidden">
     <!-- Header -->
-    <div class="header-white sticky top-0 z-10 shadow-sm p-3">
-      <div class="flex items-center justify-between bg-whitepx-4 pt-3 pb-2">
-        <h1 class="text-2xl font-bold text-gray-900">POS</h1>
+    <div class="sticky top-0 z-10 px-3 pt-1 bg-[#F5F5F7]">
+      <div class="flex items-center justify-between px-4 pt-3 pb-2">
+        <h1 class="text-2xl font-bold text-gray-900">Yummy Gut</h1>
         <div class="flex gap-3">
+          <Button
+            v-if="isSupported()"
+            :icon="isFullscreen ? 'pi pi-window-minimize' : 'pi pi-window-maximize'"
+            @click="toggleFullscreen"
+            severity="secondary"
+            size="small"
+            outlined
+            :pt="{ root: { class: 'px-2' } }"
+            v-tooltip.top="isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'"
+          />
+          <Button
+            icon="pi pi-qrcode"
+            @click="showQRModal = true"
+            severity="secondary"
+            size="small"
+            outlined
+            :pt="{ root: { class: 'px-2' } }"
+            v-tooltip.top="'Show QR Code'"
+          />
           <Button
             label="Drafts"
             icon="pi pi-file"
@@ -13,20 +32,11 @@
             size="small"
             outlined
           />
-          <router-link to="/items">
-            <Button
-              label="Items"
-              icon="pi pi-box"
-              severity="secondary"
-              size="small"
-              outlined
-            />
-          </router-link>
         </div>
       </div>
       
       <!-- Edit Mode Banner -->
-      <div v-if="editingOrderId" class="mt-2 px-4 py-2 bg-yellow-50 border-l-4 border-yellow-400 rounded flex items-center justify-between">
+      <div v-if="editingOrderId" class="mt-2 px-4 py-2 bg-yellow-50 border-l-4 border-yellow-400 rounded-[12px] flex items-center justify-between">
         <div class="flex items-center gap-2">
           <i class="pi pi-pencil text-yellow-600"></i>
           <span class="text-sm font-medium text-yellow-800">
@@ -46,32 +56,38 @@
     </div>
 
     <!-- Items Grid -->
-    <div v-if="loading" class="p-6 text-center text-gray-600">
-      <ProgressSpinner />
-    </div>
-    
-    <div v-else-if="activeItems.length === 0" class="p-8 text-center">
-      <p class="mb-2 text-lg text-gray-900">No active items available</p>
-      <p v-if="error" class="text-red-600 text-sm mb-4">{{ error }}</p>
-      <p v-else class="text-sm mb-4 text-gray-500">Set up Supabase to add items</p>
-      <router-link to="/items">
-        <Button
-          label="Manage Items"
-          icon="pi pi-plus"
-          severity="primary"
-        />
-      </router-link>
-    </div>
+    <div class="flex-1 overflow-y-auto">
+      <div v-if="loading" class="p-6 text-center text-gray-600">
+        <ProgressSpinner />
+      </div>
+      
+      <div v-else-if="activeItems.length === 0" class="p-8 text-center">
+        <p class="mb-2 text-lg text-gray-900">No active items available</p>
+        <p v-if="error" class="text-red-600 text-sm mb-4">{{ error }}</p>
+        <p v-else class="text-sm mb-4 text-gray-500">Set up Supabase to add items</p>
+        <router-link to="/items">
+          <Button
+            label="Manage Items"
+            icon="pi pi-plus"
+            severity="primary"
+          />
+        </router-link>
+      </div>
 
-    <div v-else class="p-4 grid grid-cols-2 gap-4">
-      <ItemCard
-        v-for="item in activeItems"
-        :key="item.id"
-        :item="item"
-        :quantity="getCartQuantity(item.id)"
-        @add="addToCart(item)"
-        @remove="removeFromCart(item.id)"
-      />
+      <div 
+        v-else 
+        class="p-4 grid grid-cols-2 gap-4 bg-[#F5F5F7]"
+        :style="{ paddingBottom: cart.length > 0 ? '250px' : '80px' }"
+      >
+        <ItemCard
+          v-for="item in activeItems"
+          :key="item.id"
+          :item="item"
+          :quantity="getCartQuantity(item.id)"
+          @add="addToCart(item)"
+          @remove="removeFromCart(item.id)"
+        />
+      </div>
     </div>
 
     <!-- Order Summary (Sticky Bottom) -->
@@ -80,6 +96,7 @@
       :grand-total="grandTotal"
       :total-items="totalItems"
       :is-editing="!!editingOrderId"
+      :loading="orderLoading"
       @clear="clearCart"
       @place-order="handlePlaceOrder"
       @save-draft="handleSaveDraft"
@@ -94,6 +111,15 @@
       @close="showDrafts = false"
       @load-draft="handleLoadDraft"
     />
+
+    <!-- QR Code Modal -->
+    <QRCodeModal
+      v-model:visible="showQRModal"
+      @qr-generated="handleQRGenerated"
+      @qr-uploaded="handleQRUploaded"
+      @close="showQRModal = false"
+      @qr-updated="handleQRUpdated"
+    />
   </div>
 </template>
 
@@ -104,21 +130,27 @@ import { useCart } from '@/composables/useCart'
 import { useOrders } from '@/composables/useOrders'
 import { useDraftOrders } from '@/composables/useDraftOrders'
 import { useToast } from 'primevue/usetoast'
+import { useFullscreen } from '@/composables/useFullscreen'
+import { useQRCode } from '@/composables/useQRCode'
 import Button from 'primevue/button'
 import ProgressSpinner from 'primevue/progressspinner'
 import ItemCard from './ItemCard.vue'
 import OrderSummary from './OrderSummary.vue'
 import DraftOrdersModal from './DraftOrdersModal.vue'
+import QRCodeModal from './QRCodeModal.vue'
 import BottomNav from './BottomNav.vue'
 
 const toast = useToast()
+const { isFullscreen, toggleFullscreen, isSupported } = useFullscreen()
+const { saveGeneratedQR, uploadQRCode } = useQRCode()
 
 const { activeItems, loading, error, fetchItems } = useItems()
 const { cart, addToCart, removeFromCart, clearCart, loadCart, grandTotal, totalItems } = useCart()
-const { placeOrder, clearEditingOrder, editingOrderId } = useOrders()
+const { placeOrder, clearEditingOrder, editingOrderId, loading: orderLoading } = useOrders()
 const { saveDraft } = useDraftOrders()
 
 const showDrafts = ref(false)
+const showQRModal = ref(false)
 
 onMounted(() => {
   console.log('OrderScreen mounted, fetching items...')
@@ -196,6 +228,36 @@ const handleCancelEdit = () => {
     clearEditingOrder()
     toast.add({ severity: 'info', summary: 'Cancelled', detail: 'Edit cancelled', life: 2000 })
   }
+}
+
+const handleQRGenerated = async (data) => {
+  try {
+    await saveGeneratedQR(data.text, data.dataUrl)
+    toast.add({ severity: 'success', summary: 'Success', detail: 'QR code generated and saved', life: 3000 })
+  } catch (error) {
+    console.error('Error saving QR code:', error)
+    // Don't show error toast if storage isn't configured
+    if (error.message && !error.message.includes('storage')) {
+      toast.add({ severity: 'warn', summary: 'Warning', detail: 'QR code generated but not saved to storage', life: 3000 })
+    }
+  }
+}
+
+const handleQRUploaded = async (data) => {
+  try {
+    await uploadQRCode(data.file, null)
+    toast.add({ severity: 'success', summary: 'Success', detail: 'QR code uploaded and saved', life: 3000 })
+  } catch (error) {
+    console.error('Error uploading QR code:', error)
+    // Don't show error toast if storage isn't configured
+    if (error.message && !error.message.includes('storage')) {
+      toast.add({ severity: 'warn', summary: 'Warning', detail: 'QR code displayed but not saved to storage', life: 3000 })
+    }
+  }
+}
+
+const handleQRUpdated = async () => {
+  // QR code was updated, modal will reload it automatically
 }
 </script>
 
