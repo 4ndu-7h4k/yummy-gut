@@ -1,8 +1,8 @@
 <template>
-  <div class="min-h-screen bg-[#F5F5F7] pb-20">
+  <div class="h-screen pb-20 flex flex-col">
     <!-- Header -->
-    <div class=" sticky top-0 z-10 px-3 pt-1">
-      <div class="flex items-center justify-between px-4 pt-3 pb-2">
+    <div class=" sticky top-0 z-10 px-3 bg-[#F5F5F7]">
+      <div class="flex items-center justify-between px-4 pb-1">
         <h1 class="text-2xl font-bold text-gray-900">Reports</h1>
         <div class="flex gap-3">
           <Button
@@ -44,7 +44,7 @@
     </div>
 
     <!-- Reports Content -->
-    <div class="p-4 space-y-4 bg-[#F5F5F7]">
+    <div class="p-4 space-y-4 overflow-y-auto ">
       <div v-if="loading" class="text-center text-gray-600 py-8">
         <ProgressSpinner />
       </div>
@@ -100,6 +100,7 @@
             <DataTable
               v-else
               :value="itemSales"
+              :frozenValue="lockedTotal"
               :rows="10"
               :rowsPerPageOptions="[5, 10, 20]"
               paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
@@ -111,20 +112,32 @@
                 <template #body="{ data }">
                   <span class="font-medium text-gray-900">{{ data.name }}</span>
                 </template>
+                <template #frozenbody="{ data }">
+                  <span class="font-bold text-gray-900">{{ data.name }}</span>
+                </template>
               </Column>
               <Column field="quantity" header="Qunty">
                 <template #body="{ data }">
-                  <span class="text-gray-700">{{ data.quantity }} units</span>
+                  <span class="text-gray-700">{{ data.quantity }}</span>
+                </template>
+                <template #frozenbody="{ data }">
+                  <span class="font-bold text-gray-900">{{ data.quantity }}</span>
                 </template>
               </Column>
               <Column field="revenue" header="Revenue">
                 <template #body="{ data }">
                   <span class="font-bold text-ios-blue">₹{{ data.revenue.toFixed(2) }}</span>
                 </template>
+                <template #frozenbody="{ data }">
+                  <span class="font-bold text-ios-blue">₹{{ data.revenue.toFixed(2) }}</span>
+                </template>
               </Column>
               <Column field="percentage" header="Total">
                 <template #body="{ data }">
                   <span class="text-gray-600">{{ data.percentage }}%</span>
+                </template>
+                <template #frozenbody="{ data }">
+                  <span class="font-bold text-gray-900">{{ data.percentage }}%</span>
                 </template>
               </Column>
             </DataTable>
@@ -190,6 +203,41 @@ const mostSoldItem = computed(() => {
   , itemSales.value[0])
 })
 
+const lockedTotal = computed(() => {
+  if (itemSales.value.length === 0) return []
+  
+  const totalRevenue = itemSales.value.reduce((sum, item) => sum + item.revenue, 0)
+  
+  // Find chai item (case-insensitive)
+  const chaiItem = itemSales.value.find(item => 
+    item.name.toLowerCase().includes('tea')
+  )
+  
+  // Calculate quantities
+  const chaiQuantity = chaiItem ? chaiItem.quantity : 0
+  const otherItemsQuantity = itemSales.value.reduce((sum, item) => {
+    const isChai = item.name.toLowerCase().includes('tea')
+    return isChai ? sum : sum + item.quantity
+  }, 0)
+  
+  // Format quantity: "X [other items] + Y chai"
+  let quantityDisplay = ''
+  if (chaiQuantity > 0 && otherItemsQuantity > 0) {
+    quantityDisplay = `${otherItemsQuantity} buns + ${chaiQuantity} chai`
+  } else if (chaiQuantity > 0) {
+    quantityDisplay = `${chaiQuantity} chai`
+  } else {
+    quantityDisplay = `${otherItemsQuantity} buns`
+  }
+  
+  return [{
+    name: 'Total',
+    quantity: quantityDisplay,
+    revenue: totalRevenue,
+    percentage: '100.0'
+  }]
+})
+
 const revenueChartData = computed(() => {
   const topItems = itemSales.value.slice(0, 10) // Show top 10 items
   return {
@@ -226,8 +274,8 @@ const quantityChartData = computed(() => {
         borderSkipped: false,
       },
       {
-        label: 'Stock',
-        data: topItems.map(item => item.stock_quantity ?? 0),
+        label: 'Available Stock',
+        data: topItems.map(item => item.available_stock ?? item.daily_stock ?? 0),
         backgroundColor: '#d1eaff',
         borderWidth: 0,
         borderRadius: {
@@ -394,7 +442,7 @@ const fetchReports = async () => {
       order.order_items?.forEach(oi => {
         const itemId = oi.item_id
         const itemName = oi.item?.name || 'Unknown'
-        const stockQuantity = oi.item?.stock_quantity ?? null
+        const availableStock = oi.item?.available_stock ?? oi.item?.daily_stock ?? null
         
         if (!itemMap.has(itemId)) {
           itemMap.set(itemId, {
@@ -402,7 +450,7 @@ const fetchReports = async () => {
             name: itemName,
             quantity: 0,
             revenue: 0,
-            stock_quantity: stockQuantity
+            available_stock: availableStock
           })
         }
         

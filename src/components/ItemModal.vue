@@ -64,14 +64,17 @@
 
       <div>
         <label class="block text-sm font-medium mb-2 text-gray-700">
-          Stock Quantity (optional)
+          Daily Stock (optional)
         </label>
         <InputNumber
-          v-model="formData.stock_quantity"
+          v-model="formData.daily_stock"
           :min="0"
-          placeholder="Leave empty for unlimited"
+          placeholder="Initial stock for today"
           class="w-full"
         />
+        <p class="text-xs text-gray-500 mt-1">
+          Set the initial stock quantity for today. Sales will be tracked automatically.
+        </p>
       </div>
 
       <div class="flex items-center">
@@ -125,7 +128,7 @@ const formData = ref({
   name: '',
   price: 0,
   display_order: 0,
-  stock_quantity: null,
+  daily_stock: null,
   is_active: true
 })
 
@@ -135,7 +138,7 @@ watch(() => props.item, (newItem) => {
       name: newItem.name,
       price: parseFloat(newItem.price),
       display_order: newItem.display_order ?? 0,
-      stock_quantity: newItem.stock_quantity,
+      daily_stock: newItem.daily_stock ?? null,
       is_active: newItem.is_active
     }
   } else {
@@ -143,7 +146,7 @@ watch(() => props.item, (newItem) => {
       name: '',
       price: 0,
       display_order: 0,
-      stock_quantity: null,
+      daily_stock: null,
       is_active: true
     }
   }
@@ -154,7 +157,7 @@ const handleSubmit = () => {
     name: formData.value.name.trim(),
     price: formData.value.price,
     display_order: formData.value.display_order ?? 0,
-    stock_quantity: formData.value.stock_quantity || null,
+    daily_stock: formData.value.daily_stock || null,
     is_active: formData.value.is_active
   }
   emit('save', data)

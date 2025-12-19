@@ -55,11 +55,21 @@
 *::after {
   box-sizing: border-box;
 }
-
+html ,body {
+  scroll-behavior: none;
+  overflow: hidden;
+  height: 100%;
+  position: fixed;
+  width: 100%;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+}
 body {
   min-height: 100vh;
   color: var(--color-text);
-  background: var(--color-background);
+  background: #F5F5F7;
   transition:
     color 0.5s,
     background-color 0.5s;

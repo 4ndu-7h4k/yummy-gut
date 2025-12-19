@@ -1,8 +1,8 @@
 <template>
-  <div class="min-h-screen bg-[#F5F5F7] pb-20">
+  <div class="h-screen flex flex-col pb-20">
     <!-- Header -->
-    <div class=" sticky top-0 z-10 px-3 pt-1 bg-[#F5F5F7]">
-      <div class="flex items-center justify-between px-4 pt-3 pb-2">
+    <div class=" sticky top-0 z-10 px-3 bg-[#F5F5F7]">
+      <div class="flex items-center justify-between px-4 pb-1">
         <h1 class="text-2xl font-bold text-gray-900">Order History</h1>
         <div class="flex gap-3">
           <Button
@@ -28,7 +28,7 @@
       </div>
       
       <!-- Date Filter Buttons -->
-      <div class="flex gap-2 px-4 pb-3">
+      <div class="flex gap-2 px-4 pb-3 pt-2">
         <Button
           label="Today"
           :severity="dateFilter === 'today' ? 'primary' : 'secondary'"
@@ -57,7 +57,7 @@
     </div>
 
     <!-- Orders List -->
-    <div class="p-4 space-y-4 bg-[#F5F5F7]">
+    <div class="p-4 space-y-4 bg-[#F5F5F7] flex-1 overflow-y-auto">
       <div v-if="loading" class="text-center text-gray-600 py-8">
         <ProgressSpinner />
       </div>
@@ -77,7 +77,7 @@
               <p class="text-xs text-gray-500 mb-1">
                 {{ new Date(order.created_at).toLocaleString() }}
               </p>
-              <p class="text-sm font-mono text-gray-700">Order #{{ order.id.slice(0, 8) }}</p>
+              <p class="text-sm font-mono text-gray-700">{{ getTimeAgo(order.created_at, order.id) }} ago</p>
             </div>
             <p class="text-xl font-bold text-ios-blue">₹{{ parseFloat(order.total_amount).toFixed(2) }}</p>
           </div>
@@ -152,8 +152,7 @@ const handleLoadOrder = (order) => {
     id: oi.item_id,
     name: oi.item?.name || 'Unknown',
     price: parseFloat(oi.price),
-    quantity: oi.quantity,
-    stock_quantity: oi.item?.stock_quantity || null
+    quantity: oi.quantity
   }))
   
   loadCart(items)
@@ -170,5 +169,31 @@ const handleDelete = async (orderId) => {
       toast.add({ severity: 'error', summary: 'Error', detail: 'Error deleting order: ' + error.message, life: 5000 })
     }
   }
+}
+
+const getTimeAgo = (createdAt, orderId) => {
+  const now = new Date()
+  const orderDate = new Date(createdAt)
+  const diffMs = now - orderDate
+  const diffMins = Math.floor(diffMs / 60000)
+  const diffHours = Math.floor(diffMs / 3600000)
+  
+  // If less than 1 minute, show "just now"
+  if (diffMins < 1) {
+    return 'just now'
+  }
+  
+  // If less than 1 hour, show minutes
+  if (diffMins < 60) {
+    return `${diffMins} min${diffMins > 1 ? '' : ''}`
+  }
+  
+  // If less than 3 hours, show hours
+  if (diffHours < 3) {
+    return `${diffHours} hour${diffHours > 1 ? 's' : ''}`
+  }
+  
+  // If 3 hours or more, show order ID
+  return `Order #${orderId.slice(0, 8)}`
 }
 </script>

@@ -45,7 +45,7 @@
 
 <style scoped>
 .safe-area-bottom {
-  padding-bottom: env(safe-area-inset-bottom);
+  padding-bottom: calc(env(safe-area-inset-bottom) - 20px);
 }
 
 .liquid-glass {

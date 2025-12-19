@@ -5,8 +5,8 @@
         <div class="flex-1">
           <h3 class="font-semibold text-lg mb-2 text-gray-900">{{ item.name }}</h3>
           <p class="text-blue-600 font-bold text-xl mb-1">₹{{ item.price * quantity }}</p>
-          <p v-if="item.stock_quantity !== null" class="text-xs text-gray-500">
-            Stock: {{ item.stock_quantity - quantity }} - <span class="text-lg font-bold text-green-600">₹{{ parseInt(item.price) }}</span>
+          <p v-if="item.available_stock !== null" class="text-xs text-gray-500">
+            Available: {{ item.available_stock - quantity }} - <span class="text-lg font-bold text-green-600">₹{{ parseInt(item.price) }}</span>
           </p>
         </div>
 
@@ -29,7 +29,7 @@
           <Button
             icon="pi pi-plus"
             @click="$emit('add')"
-            :disabled="item.stock_quantity !== null && quantity >= item.stock_quantity"
+            :disabled="item.available_stock !== null && quantity >= item.available_stock"
             severity="primary"
             rounded
             size="small"

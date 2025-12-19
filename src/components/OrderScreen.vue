@@ -1,8 +1,8 @@
 <template>
   <div class="h-screen bg-[#F5F5F7] flex flex-col overflow-hidden">
     <!-- Header -->
-    <div class="sticky top-0 z-10 px-3 pt-1 bg-[#F5F5F7]">
-      <div class="flex items-center justify-between px-4 pt-3 pb-2">
+    <div class="sticky top-0 z-10 px-3 bg-[#F5F5F7]">
+      <div class="flex items-center justify-between px-4 pb-1">
         <h1 class="text-2xl font-bold text-gray-900">Yummy Gut</h1>
         <div class="flex gap-3">
           <Button
@@ -77,7 +77,7 @@
       <div 
         v-else 
         class="p-4 grid grid-cols-2 gap-4 bg-[#F5F5F7]"
-        :style="{ paddingBottom: cart.length > 0 ? '250px' : '80px' }"
+        :style="{ paddingBottom: cart.length > 0 ? '280px' : '100px' }"
       >
         <ItemCard
           v-for="item in activeItems"
@@ -173,8 +173,7 @@ const handlePlaceOrder = async () => {
       name: item.name,
       price: item.price,
       quantity: item.quantity,
-      subtotal: parseFloat((item.price * item.quantity).toFixed(2)),
-      stock_quantity: item.stock_quantity
+      subtotal: parseFloat((item.price * item.quantity).toFixed(2))
     }))
 
     await placeOrder(orderItems, parseFloat(grandTotal.value))

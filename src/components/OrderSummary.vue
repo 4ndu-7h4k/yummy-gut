@@ -1,12 +1,12 @@
 <template>
   <div
     v-if="cart.length > 0"
-    class="fixed bottom-18 mx-3 left-0 right-0 bg-white z-20 safe-area-bottom rounded-[20px]"
+    class="fixed bottom-22 border-t border-gray-200 mx-3 left-0 right-0 bg-white z-20 safe-area-bottom rounded-[20px]"
   >
     <div class="px-6 py-4">
-      <div class="flex items-center justify-between mb-4">
+      <div class="flex items-center justify-between">
         <div>
-          <p class="text-sm text-gray-500 mb-1">Total Items</p>
+          <p class="text-sm text-gray-500 mb-3">Total Items</p>
           <p class="text-2xl font-bold text-gray-900">{{ totalItems }}</p>
         </div>
         <div class="text-right">
@@ -75,8 +75,6 @@ defineEmits(['clear', 'place-order', 'save-draft'])
 </script>
 
 <style scoped>
-.safe-area-bottom {
-  padding-bottom: env(safe-area-inset-bottom);
-}
+
 </style>
 

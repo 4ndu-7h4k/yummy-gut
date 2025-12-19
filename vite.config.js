@@ -21,7 +21,7 @@ export default defineConfig({
         name: "Yummy Gut - POS",
         short_name: "Yummy Gut - POS",
         description: "Yummy Gut - POS System",
-        theme_color: "#3b82f6",
+        theme_color: "#F5F5F7",
         background_color: "#ffffff",
         display: "standalone",
         orientation: "portrait",
