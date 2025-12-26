@@ -6,14 +6,13 @@
         <h1 class="text-2xl font-bold text-gray-900">Items</h1>
         <div class="flex gap-3">
           <Button
-            v-if="isSupported()"
-            :icon="isFullscreen ? 'pi pi-window-minimize' : 'pi pi-window-maximize'"
-            @click="toggleFullscreen"
+            icon="pi pi-qrcode"
+            @click="showQRModal = true"
             severity="secondary"
             size="small"
             outlined
             :pt="{ root: { class: 'px-2' } }"
-            v-tooltip.top="isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'"
+            v-tooltip.top="'Show QR Code'"
           />
           <Button
             label="Add"
@@ -23,15 +22,6 @@
             size="small"
             outlined
           />
-          <router-link to="/">
-            <Button
-              label="POS"
-              icon="pi pi-shopping-cart"
-              severity="secondary"
-              size="small"
-              outlined
-            />
-          </router-link>
         </div>
       </div>
     </div>
@@ -129,6 +119,12 @@
       @save="handleSave"
     />
 
+    <!-- QR Code Modal -->
+    <QRCodeModal
+      v-model:visible="showQRModal"
+      @close="showQRModal = false"
+    />
+
     <!-- Bottom Navigation -->
     <BottomNav />
   </div>
@@ -138,21 +134,21 @@
 import { ref, computed, onMounted } from 'vue'
 import { useItems } from '@/composables/useItems'
 import { useToast } from 'primevue/usetoast'
-import { useFullscreen } from '@/composables/useFullscreen'
 import Button from 'primevue/button'
 import Card from 'primevue/card'
 import Tag from 'primevue/tag'
 import ProgressSpinner from 'primevue/progressspinner'
 import ProgressBar from 'primevue/progressbar'
 import ItemModal from './ItemModal.vue'
+import QRCodeModal from './QRCodeModal.vue'
 import BottomNav from './BottomNav.vue'
 
 const toast = useToast()
-const { isFullscreen, toggleFullscreen, isSupported } = useFullscreen()
 
 const { items, loading, fetchItems, addItem, updateItem, toggleItemActive } = useItems()
 const showAddModal = ref(false)
 const editingItem = ref(null)
+const showQRModal = ref(false)
 
 // Sort items by display_order for management screen
 const sortedItems = computed(() => {

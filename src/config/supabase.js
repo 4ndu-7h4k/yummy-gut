@@ -13,7 +13,16 @@ if (!supabaseUrl || !supabaseAnonKey) {
   // Create a mock client that will fail gracefully
   supabaseClient = createClient('https://placeholder.supabase.co', 'placeholder-key')
 } else {
-  supabaseClient = createClient(supabaseUrl, supabaseAnonKey)
+  // Configure client with auth options
+  // Note: Session duration is configured in Supabase Dashboard > Authentication > Settings
+  // Set JWT expiry to 30 days (2592000 seconds) in the dashboard
+  supabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: true,
+    }
+  })
 }
 
 export const supabase = supabaseClient

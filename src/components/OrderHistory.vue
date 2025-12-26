@@ -6,24 +6,14 @@
         <h1 class="text-2xl font-bold text-gray-900">Order History</h1>
         <div class="flex gap-3">
           <Button
-            v-if="isSupported()"
-            :icon="isFullscreen ? 'pi pi-window-minimize' : 'pi pi-window-maximize'"
-            @click="toggleFullscreen"
+            icon="pi pi-qrcode"
+            @click="showQRModal = true"
             severity="secondary"
             size="small"
             outlined
             :pt="{ root: { class: 'px-2' } }"
-            v-tooltip.top="isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'"
+            v-tooltip.top="'Show QR Code'"
           />
-          <router-link to="/">
-            <Button
-              label="POS"
-              icon="pi pi-shopping-cart"
-              severity="secondary"
-              size="small"
-              outlined
-            />
-          </router-link>
         </div>
       </div>
       
@@ -111,6 +101,12 @@
       </Card>
     </div>
 
+    <!-- QR Code Modal -->
+    <QRCodeModal
+      v-model:visible="showQRModal"
+      @close="showQRModal = false"
+    />
+
     <!-- Bottom Navigation -->
     <BottomNav />
   </div>
@@ -122,16 +118,16 @@ import { useRouter } from 'vue-router'
 import { useOrders } from '@/composables/useOrders'
 import { useCart } from '@/composables/useCart'
 import { useToast } from 'primevue/usetoast'
-import { useFullscreen } from '@/composables/useFullscreen'
 import Button from 'primevue/button'
 import Card from 'primevue/card'
 import ProgressSpinner from 'primevue/progressspinner'
+import QRCodeModal from './QRCodeModal.vue'
 import BottomNav from './BottomNav.vue'
 
 const toast = useToast()
-const { isFullscreen, toggleFullscreen, isSupported } = useFullscreen()
 
 const router = useRouter()
+const showQRModal = ref(false)
 const { orders, loading, fetchOrders, deleteOrder, setEditingOrder } = useOrders()
 const { loadCart } = useCart()
 

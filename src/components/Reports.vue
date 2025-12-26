@@ -6,40 +6,54 @@
         <h1 class="text-2xl font-bold text-gray-900">Reports</h1>
         <div class="flex gap-3">
           <Button
-            v-if="isSupported()"
-            :icon="isFullscreen ? 'pi pi-window-minimize' : 'pi pi-window-maximize'"
-            @click="toggleFullscreen"
+            icon="pi pi-qrcode"
+            @click="showQRModal = true"
             severity="secondary"
             size="small"
             outlined
             :pt="{ root: { class: 'px-2' } }"
-            v-tooltip.top="isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'"
+            v-tooltip.top="'Show QR Code'"
           />
-          <router-link to="/">
-            <Button
-              label="POS"
-              icon="pi pi-shopping-cart"
-              severity="secondary"
-              size="small"
-              outlined
-            />
-          </router-link>
+          <Button
+            icon="pi pi-sign-out"
+            @click="handleLogout"
+            severity="secondary"
+            size="small"
+            outlined
+            :pt="{ root: { class: 'px-2' } }"
+            v-tooltip.top="'Logout'"
+          />
         </div>
       </div>
     </div>
 
     <!-- Filter Section -->
     <div class="px-4 py-3 bg-[#F5F5F7] border-b border-gray-200">
-      <div class="flex items-center gap-2">
-        <label class="text-sm font-medium text-gray-700">Filter:</label>
-        <Select
-          v-model="period"
-          @update:modelValue="fetchReports"
-          :options="periodOptions"
-          optionLabel="label"
-          optionValue="value"
-          class="w-40"
-        />
+      <div class="flex flex-col gap-3">
+        <div class="flex items-center gap-2">
+          <label class="text-sm font-medium text-gray-700">Filter:</label>
+          <Select
+            v-model="period"
+            @update:modelValue="handlePeriodChange"
+            :options="periodOptions"
+            optionLabel="label"
+            optionValue="value"
+            class="w-40"
+          />
+        </div>
+        <!-- Custom Date Picker -->
+        <div v-if="period === 'custom'" class="flex items-center gap-2">
+          <label class="text-sm font-medium text-gray-700">Date:</label>
+          <Calendar
+            v-model="customStartDate"
+            @update:modelValue="handleCustomDateChange"
+            dateFormat="yy-mm-dd"
+            showIcon
+            iconDisplay="input"
+            inputId="custom-date"
+            class="w-40"
+          />
+        </div>
       </div>
     </div>
 
@@ -156,6 +170,12 @@
       </div>
     </div>
 
+    <!-- QR Code Modal -->
+    <QRCodeModal
+      v-model:visible="showQRModal"
+      @close="showQRModal = false"
+    />
+
     <!-- Bottom Navigation -->
     <BottomNav />
   </div>
@@ -164,8 +184,8 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { supabase } from '@/config/supabase'
+import { useAuth } from '@/composables/useAuth'
 import { useToast } from 'primevue/usetoast'
-import { useFullscreen } from '@/composables/useFullscreen'
 import Button from 'primevue/button'
 import Card from 'primevue/card'
 import Select from 'primevue/select'
@@ -173,17 +193,22 @@ import ProgressSpinner from 'primevue/progressspinner'
 import Chart from 'primevue/chart'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
+import Calendar from 'primevue/calendar'
+import QRCodeModal from './QRCodeModal.vue'
 import BottomNav from './BottomNav.vue'
 
 const toast = useToast()
-const { isFullscreen, toggleFullscreen, isSupported } = useFullscreen()
+const { signOut } = useAuth()
 
 const period = ref('today')
+const showQRModal = ref(false)
 const periodOptions = [
   { label: 'Today', value: 'today' },
   { label: 'Yesterday', value: 'yesterday' },
-  { label: 'All', value: 'all' }
+  { label: 'All', value: 'all' },
+  { label: 'Custom Date', value: 'custom' }
 ]
+const customStartDate = ref(null)
 const loading = ref(false)
 const orders = ref([])
 const itemSales = ref([])
@@ -397,6 +422,19 @@ const getDateRange = () => {
       start = new Date(yesterday.getFullYear(), yesterday.getMonth(), yesterday.getDate())
       end = new Date(yesterday.getFullYear(), yesterday.getMonth(), yesterday.getDate(), 23, 59, 59, 999)
       break
+    case 'custom':
+      if (customStartDate.value) {
+        // Set start date to beginning of selected day
+        start = new Date(customStartDate.value)
+        start.setHours(0, 0, 0, 0)
+        // Set end date to end of selected day
+        end = new Date(customStartDate.value)
+        end.setHours(23, 59, 59, 999)
+      } else {
+        // If date not selected, return null to prevent fetching
+        return { start: null, end: null }
+      }
+      break
     case 'all':
       // No date filter - return null to fetch all records
       return { start: null, end: null }
@@ -408,10 +446,31 @@ const getDateRange = () => {
   return { start: start.toISOString(), end: end.toISOString() }
 }
 
+const handlePeriodChange = () => {
+  // Reset custom date when switching away from custom
+  if (period.value !== 'custom') {
+    customStartDate.value = null
+  }
+  fetchReports()
+}
+
+const handleCustomDateChange = () => {
+  // Fetch reports when date is selected
+  if (customStartDate.value) {
+    fetchReports()
+  }
+}
+
 const fetchReports = async () => {
   loading.value = true
   try {
     const { start, end } = getDateRange()
+    
+    // For custom date, don't fetch if date is not selected
+    if (period.value === 'custom' && (!start || !end)) {
+      loading.value = false
+      return
+    }
     
     // Fetch orders
     let query = supabase
@@ -473,6 +532,17 @@ const fetchReports = async () => {
     toast.add({ severity: 'error', summary: 'Error', detail: 'Error loading reports: ' + error.message, life: 5000 })
   } finally {
     loading.value = false
+  }
+}
+
+const handleLogout = async () => {
+  if (confirm('Are you sure you want to logout?')) {
+    try {
+      await signOut()
+      toast.add({ severity: 'info', summary: 'Logged Out', detail: 'You have been logged out successfully', life: 3000 })
+    } catch (error) {
+      toast.add({ severity: 'error', summary: 'Error', detail: 'Error logging out: ' + error.message, life: 5000 })
+    }
   }
 }
 

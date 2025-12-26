@@ -6,16 +6,6 @@
         <h1 class="text-2xl font-bold text-gray-900">Yummy Gut</h1>
         <div class="flex gap-3">
           <Button
-            v-if="isSupported()"
-            :icon="isFullscreen ? 'pi pi-window-minimize' : 'pi pi-window-maximize'"
-            @click="toggleFullscreen"
-            severity="secondary"
-            size="small"
-            outlined
-            :pt="{ root: { class: 'px-2' } }"
-            v-tooltip.top="isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'"
-          />
-          <Button
             icon="pi pi-qrcode"
             @click="showQRModal = true"
             severity="secondary"
@@ -130,7 +120,6 @@ import { useCart } from '@/composables/useCart'
 import { useOrders } from '@/composables/useOrders'
 import { useDraftOrders } from '@/composables/useDraftOrders'
 import { useToast } from 'primevue/usetoast'
-import { useFullscreen } from '@/composables/useFullscreen'
 import { useQRCode } from '@/composables/useQRCode'
 import Button from 'primevue/button'
 import ProgressSpinner from 'primevue/progressspinner'
@@ -141,7 +130,6 @@ import QRCodeModal from './QRCodeModal.vue'
 import BottomNav from './BottomNav.vue'
 
 const toast = useToast()
-const { isFullscreen, toggleFullscreen, isSupported } = useFullscreen()
 const { saveGeneratedQR, uploadQRCode } = useQRCode()
 
 const { activeItems, loading, error, fetchItems } = useItems()
