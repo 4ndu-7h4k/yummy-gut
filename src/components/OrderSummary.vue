@@ -4,10 +4,29 @@
     class="fixed bottom-22 border-t border-gray-200 mx-3 left-0 right-0 bg-white z-20 safe-area-bottom rounded-[20px]"
   >
     <div class="px-6 py-4">
-      <div class="flex items-center justify-between">
+      <!-- Cash Amount, Balance and Grand Total -->
+      <div class="flex items-center justify-between mb-3">
         <div>
-          <p class="text-sm text-gray-500 mb-3">Total Items</p>
-          <p class="text-2xl font-bold text-gray-900">{{ totalItems }}</p>
+          <!-- Cash Buttons - Scrollable -->
+          <div class="mb-2">
+            <div class="flex gap-2 overflow-x-auto pb-2 scrollbar-hide" style="scrollbar-width: none; -ms-overflow-style: none;">
+              <Button
+                v-for="amount in cashDenominations"
+                :key="amount"
+                :label="`₹${amount}`"
+                @click="selectCash(amount)"
+                :severity="selectedCash === amount ? 'primary' : 'secondary'"
+                :outlined="selectedCash !== amount"
+                size="small"
+                class="shrink-0 rounded-[999px]!"
+              />
+            </div>
+          </div>
+          <div v-if="selectedCash > 0">
+            <p class="text-lg font-bold" :class="balance >= 0 ? 'text-green-600' : 'text-red-600'">
+              ₹{{ balance.toFixed(2) }}
+            </p>
+          </div>
         </div>
         <div class="text-right">
           <p class="text-sm text-gray-500 mb-1">Grand Total</p>
@@ -15,10 +34,11 @@
         </div>
       </div>
 
+      <!-- Action Buttons -->
       <div class="flex gap-3">
         <Button
           icon="pi pi-trash"
-          @click="$emit('clear')"
+          @click="handleClear"
           severity="danger"
           outlined
           size="small"
@@ -46,9 +66,10 @@
 </template>
 
 <script setup>
+import { ref, computed } from 'vue'
 import Button from 'primevue/button'
 
-defineProps({
+const props = defineProps({
   cart: {
     type: Array,
     required: true
@@ -71,10 +92,31 @@ defineProps({
   }
 })
 
-defineEmits(['clear', 'place-order', 'save-draft'])
+const emit = defineEmits(['clear', 'place-order', 'save-draft'])
+
+const cashDenominations = [100, 200, 500, 1000]
+const selectedCash = ref(0)
+
+const balance = computed(() => {
+  const total = parseFloat(props.grandTotal) || 0
+  return selectedCash.value - total
+})
+
+const selectCash = (amount) => {
+  // Toggle selection - if same amount clicked, deselect
+  selectedCash.value = selectedCash.value === amount ? 0 : amount
+}
+
+// Reset cash when cart is cleared
+const handleClear = () => {
+  selectedCash.value = 0
+  emit('clear')
+}
 </script>
 
 <style scoped>
-
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
 </style>
 

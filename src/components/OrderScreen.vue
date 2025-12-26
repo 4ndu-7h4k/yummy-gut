@@ -67,7 +67,7 @@
       <div 
         v-else 
         class="p-4 grid grid-cols-2 gap-4 bg-[#F5F5F7]"
-        :style="{ paddingBottom: cart.length > 0 ? '280px' : '100px' }"
+        :style="{ paddingBottom: cart.length > 0 ? '320px' : '100px' }"
       >
         <ItemCard
           v-for="item in activeItems"
