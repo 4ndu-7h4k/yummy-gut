@@ -59,6 +59,17 @@ CREATE TABLE qr_codes (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- Daily bun taken from shop (one row per calendar day: total count and value)
+CREATE TABLE daily_bun_shop (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  bun_date DATE NOT NULL,
+  bun_count INTEGER NOT NULL CHECK (bun_count >= 0),
+  bun_amount DECIMAL(10, 2) NOT NULL CHECK (bun_amount >= 0),
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  UNIQUE(bun_date)
+);
+
 -- Indexes for better query performance
 CREATE INDEX idx_items_is_active ON items(is_active);
 CREATE INDEX idx_orders_created_at ON orders(created_at DESC);
@@ -66,6 +77,7 @@ CREATE INDEX idx_order_items_order_id ON order_items(order_id);
 CREATE INDEX idx_order_items_item_id ON order_items(item_id);
 CREATE INDEX idx_draft_orders_created_at ON draft_orders(created_at DESC);
 CREATE INDEX idx_qr_codes_created_at ON qr_codes(created_at DESC);
+CREATE INDEX idx_daily_bun_shop_bun_date ON daily_bun_shop(bun_date DESC);
 
 -- Function to update updated_at timestamp
 CREATE OR REPLACE FUNCTION update_updated_at_column()
@@ -89,6 +101,9 @@ CREATE TRIGGER update_draft_orders_updated_at BEFORE UPDATE ON draft_orders
 CREATE TRIGGER update_qr_codes_updated_at BEFORE UPDATE ON qr_codes
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+CREATE TRIGGER update_daily_bun_shop_updated_at BEFORE UPDATE ON daily_bun_shop
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
 -- Row Level Security (RLS) Policies
 -- Enable RLS on all tables
 ALTER TABLE items ENABLE ROW LEVEL SECURITY;
@@ -96,6 +111,7 @@ ALTER TABLE orders ENABLE ROW LEVEL SECURITY;
 ALTER TABLE order_items ENABLE ROW LEVEL SECURITY;
 ALTER TABLE draft_orders ENABLE ROW LEVEL SECURITY;
 ALTER TABLE qr_codes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE daily_bun_shop ENABLE ROW LEVEL SECURITY;
 
 -- Policy: Allow all operations for authenticated users (adjust based on your auth setup)
 -- For now, we'll allow all operations (you can restrict later based on auth)
@@ -112,6 +128,9 @@ CREATE POLICY "Allow all operations on draft_orders" ON draft_orders
   FOR ALL USING (true) WITH CHECK (true);
 
 CREATE POLICY "Allow all operations on qr_codes" ON qr_codes
+  FOR ALL USING (true) WITH CHECK (true);
+
+CREATE POLICY "Allow all operations on daily_bun_shop" ON daily_bun_shop
   FOR ALL USING (true) WITH CHECK (true);
 
 -- Sample data (optional - for testing)

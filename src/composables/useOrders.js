@@ -7,7 +7,7 @@ const error = ref(null);
 const editingOrderId = ref(null); // Track which order is being edited
 
 export function useOrders() {
-  // Fetch recent orders with optional date filter
+  // Fetch orders filtered to a specific day (Date object) or all orders (null).
   const fetchOrders = async (limit = 50, dateFilter = "today") => {
     loading.value = true;
     error.value = null;
@@ -20,16 +20,27 @@ export function useOrders() {
           )
         `);
 
-      // Apply date filter based on IST timezone
-      if (dateFilter !== "all") {
-        // IST is UTC+5:30 (5 hours 30 minutes = 330 minutes)
-        const istOffsetMs = 5.5 * 60 * 60 * 1000;
+      // IST is UTC+5:30
+      const istOffsetMs = 5.5 * 60 * 60 * 1000;
 
-        // Get current time and convert to IST
+      if (dateFilter instanceof Date) {
+        // Specific day passed as Date object — use its local date parts
+        const d = dateFilter;
+        const y = d.getFullYear();
+        const m = d.getMonth();
+        const day = d.getDate();
+
+        const istDayStart = new Date(Date.UTC(y, m, day, 0, 0, 0, 0));
+        const startDate = new Date(istDayStart.getTime() - istOffsetMs);
+        const istDayEnd = new Date(Date.UTC(y, m, day + 1, 0, 0, 0, 0));
+        const endDate = new Date(istDayEnd.getTime() - istOffsetMs);
+
+        query = query
+          .gte("created_at", startDate.toISOString())
+          .lt("created_at", endDate.toISOString());
+      } else if (dateFilter !== "all") {
         const now = new Date();
         const istNow = new Date(now.getTime() + istOffsetMs);
-
-        // Get date components in IST
         const istYear = istNow.getUTCFullYear();
         const istMonth = istNow.getUTCMonth();
         const istDate = istNow.getUTCDate();
@@ -37,34 +48,25 @@ export function useOrders() {
         let startDate, endDate;
 
         if (dateFilter === "today") {
-          // Start of today in IST: YYYY-MM-DD 00:00:00 IST
-          // This equals (YYYY-MM-DD-1) 18:30:00 UTC
           const istTodayStart = new Date(
             Date.UTC(istYear, istMonth, istDate, 0, 0, 0, 0)
           );
           startDate = new Date(istTodayStart.getTime() - istOffsetMs);
-
-          // End of today in IST: YYYY-MM-DD 23:59:59 IST
-          // This equals (YYYY-MM-DD) 18:29:59 UTC, or start of next day
           const istTodayEnd = new Date(
             Date.UTC(istYear, istMonth, istDate + 1, 0, 0, 0, 0)
           );
           endDate = new Date(istTodayEnd.getTime() - istOffsetMs);
         } else if (dateFilter === "yesterday") {
-          // Start of yesterday in IST
           const istYesterdayStart = new Date(
             Date.UTC(istYear, istMonth, istDate - 1, 0, 0, 0, 0)
           );
           startDate = new Date(istYesterdayStart.getTime() - istOffsetMs);
-
-          // End of yesterday in IST (start of today)
           const istYesterdayEnd = new Date(
             Date.UTC(istYear, istMonth, istDate, 0, 0, 0, 0)
           );
           endDate = new Date(istYesterdayEnd.getTime() - istOffsetMs);
         }
 
-        // Filter orders by date range (database stores UTC)
         query = query
           .gte("created_at", startDate.toISOString())
           .lt("created_at", endDate.toISOString());

@@ -4,6 +4,7 @@ import OrderScreen from "../components/OrderScreen.vue";
 import ItemsManagement from "../components/ItemsManagement.vue";
 import OrderHistory from "../components/OrderHistory.vue";
 import Reports from "../components/Reports.vue";
+import Expenses from "../components/Expenses.vue";
 import Login from "../components/Login.vue";
 
 const routes = [
@@ -35,6 +36,12 @@ const routes = [
     path: "/reports",
     name: "Reports",
     component: Reports,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: "/expenses",
+    name: "Expenses",
+    component: Expenses,
     meta: { requiresAuth: true },
   },
 ];

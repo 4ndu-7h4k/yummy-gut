@@ -3,7 +3,25 @@
     <!-- Header -->
     <div class=" sticky top-0 z-10 px-3 bg-[#F5F5F7]">
       <div class="flex items-center justify-between px-4 pb-1">
-        <h1 class="text-2xl font-bold text-gray-900">Reports</h1>
+        <div class="flex items-center gap-3">
+          <h1 class="text-2xl font-bold text-gray-900">Reports</h1>
+          <div class="flex items-center bg-gray-200 rounded-full p-0.5">
+            <router-link
+              to="/reports"
+              class="flex items-center justify-center w-8 h-8 rounded-full transition-all duration-200"
+              :class="$route.path === '/reports' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-400'"
+            >
+              <i class="pi pi-chart-bar text-sm"></i>
+            </router-link>
+            <router-link
+              to="/expenses"
+              class="flex items-center justify-center w-8 h-8 rounded-full transition-all duration-200"
+              :class="$route.path === '/expenses' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-400'"
+            >
+              <i class="pi pi-wallet text-sm"></i>
+            </router-link>
+          </div>
+        </div>
         <div class="flex gap-3">
           <Button
             icon="pi pi-qrcode"
@@ -27,33 +45,81 @@
       </div>
     </div>
 
-    <!-- Filter Section -->
-    <div class="px-4 py-3 bg-[#F5F5F7] border-b border-gray-200">
-      <div class="flex flex-col gap-3">
-        <div class="flex items-center gap-2">
-          <label class="text-sm font-medium text-gray-700">Filter:</label>
+    <!-- Date: week strip + pull-down calendar -->
+    <div
+      class="px-2 py-3 bg-[#F5F5F7] border-b border-gray-200"
+      @touchstart="onStripTouchStart"
+      @touchmove="onStripTouchMove"
+      @touchend="onStripTouchEnd"
+    >
+      <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between px-2 mb-2">
+        <p class="text-xs text-gray-500 select-none order-2 sm:order-1">
+          <template v-if="filterMode === 'day'">Swipe dates · Pull down for calendar</template>
+          <template v-else-if="filterMode === 'range'">Choose start and end in the calendar</template>
+          <template v-else>Showing all orders</template>
+        </p>
+        <div class="flex items-center gap-2 shrink-0 order-1 sm:order-2 justify-end w-full sm:w-auto">
           <Select
-            v-model="period"
-            @update:modelValue="handlePeriodChange"
-            :options="periodOptions"
+            v-model="filterMode"
+            :options="filterModeOptions"
             optionLabel="label"
             optionValue="value"
-            class="w-40"
+            size="small"
+            class="min-w-0 flex-1 sm:flex-initial sm:w-40"
+          />
+          <Button
+            type="button"
+            :icon="calendarExpanded ? 'pi pi-chevron-up' : 'pi pi-chevron-down'"
+            severity="secondary"
+            size="small"
+            outlined
+            v-tooltip.top="calendarExpanded ? 'Hide calendar' : 'Show calendar'"
+            :disabled="filterMode === 'all'"
+            @click="calendarExpanded = !calendarExpanded"
+            :pt="{ root: { class: 'p-2' } }"
           />
         </div>
-        <!-- Custom Date Picker -->
-        <div v-if="period === 'custom'" class="flex items-center gap-2">
-          <label class="text-sm font-medium text-gray-700">Date:</label>
-          <Calendar
-            v-model="customStartDate"
-            @update:modelValue="handleCustomDateChange"
-            dateFormat="yy-mm-dd"
-            showIcon
-            iconDisplay="input"
-            inputId="custom-date"
-            class="w-40"
-          />
-        </div>
+      </div>
+
+      <div
+        v-show="filterMode === 'day'"
+        ref="dayStripRef"
+        class="flex gap-1 overflow-x-auto pb-1 scrollbar-thin snap-x snap-mandatory touch-pan-x"
+        style="-webkit-overflow-scrolling: touch"
+      >
+        <button
+          v-for="d in dayStrip"
+          :key="d.key"
+          type="button"
+          :data-day-key="d.key"
+          class="flex flex-col items-center justify-center min-w-[calc(100%/7)] max-w-[calc(100%/7)] shrink-0 snap-center rounded-xl py-2 px-1 border transition-colors touch-manipulation"
+          :class="dayStripChipClass(d)"
+          @click="selectDay(d.date)"
+        >
+          <span class="text-[10px] uppercase tracking-wide opacity-80">{{ d.weekday }}</span>
+          <span class="text-lg font-semibold leading-tight">{{ d.dayNum }}</span>
+          <span class="text-[10px] opacity-80">{{ d.monthShort }}</span>
+        </button>
+      </div>
+
+      <div v-if="filterMode === 'day' && calendarExpanded" class="mt-3 flex justify-center px-1">
+        <Calendar
+          v-model="pickerDate"
+          inline
+          :maxDate="calendarMaxDate"
+          class="w-full max-w-md"
+          @update:modelValue="onPickerDateChange"
+        />
+      </div>
+
+      <div v-if="filterMode === 'range' && calendarExpanded" class="mt-3 flex justify-center px-1">
+        <Calendar
+          v-model="rangeModel"
+          selectionMode="range"
+          inline
+          :maxDate="calendarMaxDate"
+          class="w-full max-w-md"
+        />
       </div>
     </div>
 
@@ -74,8 +140,13 @@
           </Card>
           <Card class="card-white">
             <template #content>
-              <p class="text-sm text-gray-500 mb-1">Total Orders</p>
-              <p class="text-2xl font-bold text-blue-600">{{ totalOrders }}</p>
+              <p class="text-sm text-gray-500 mb-1">Orders</p>
+              <p class="text-2xl font-bold text-blue-600">
+                <span>{{ bunSoldCount }}</span>
+                <span class="text-gray-400 mx-0.5">/</span>
+                <span class="text-gray-500">{{ dailyBunTotal ?? '—' }}</span>
+              </p>
+              <p class="text-xs text-gray-400 mt-1">{{ totalOrders }} orders</p>
             </template>
           </Card>
         </div>
@@ -182,7 +253,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch, nextTick } from 'vue'
 import { supabase } from '@/config/supabase'
 import { useAuth } from '@/composables/useAuth'
 import { useToast } from 'primevue/usetoast'
@@ -197,21 +268,159 @@ import Calendar from 'primevue/calendar'
 import QRCodeModal from './QRCodeModal.vue'
 import BottomNav from './BottomNav.vue'
 
+const DAY_STRIP_RADIUS = 120
+
 const toast = useToast()
 const { signOut } = useAuth()
 
-const period = ref('today')
+function startOfDay(d) {
+  const x = new Date(d)
+  x.setHours(0, 0, 0, 0)
+  return x
+}
+
+function addDays(d, n) {
+  const x = new Date(d)
+  x.setDate(x.getDate() + n)
+  return startOfDay(x)
+}
+
 const showQRModal = ref(false)
-const periodOptions = [
-  { label: 'Today', value: 'today' },
-  { label: 'Yesterday', value: 'yesterday' },
-  { label: 'All', value: 'all' },
-  { label: 'Custom Date', value: 'custom' }
+const filterMode = ref('day')
+const filterModeOptions = [
+  { label: 'Day', value: 'day' },
+  { label: 'Range', value: 'range' },
+  { label: 'All time', value: 'all' },
 ]
-const customStartDate = ref(null)
+
+const calendarExpanded = ref(false)
+const selectedDate = ref(startOfDay(new Date()))
+const pickerDate = ref(new Date(selectedDate.value))
+const rangeModel = ref([addDays(startOfDay(new Date()), -7), startOfDay(new Date())])
 const loading = ref(false)
 const orders = ref([])
 const itemSales = ref([])
+const dailyBunTotal = ref(null)
+const dayStripRef = ref(null)
+
+let stripTouchY0 = 0
+let stripTouchX0 = 0
+
+function dateKey(d) {
+  const x = startOfDay(d)
+  const y = x.getFullYear()
+  const m = String(x.getMonth() + 1).padStart(2, '0')
+  const day = String(x.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
+}
+
+function isSameDay(a, b) {
+  return dateKey(a) === dateKey(b)
+}
+
+function isToday(d) {
+  return isSameDay(d, new Date())
+}
+
+const calendarMaxDate = computed(() => {
+  const x = startOfDay(new Date())
+  x.setHours(23, 59, 59, 999)
+  return x
+})
+
+function dayStripChipClass(d) {
+  const selected = isSameDay(d.date, selectedDate.value)
+  if (selected) {
+    if (isToday(d.date)) {
+      return 'bg-blue-400 text-white border-blue-400 shadow-sm'
+    }
+    return 'bg-blue-400 text-white border-blue-400 shadow-sm'
+  }
+  return 'bg-white text-gray-800 border-gray-200 active:bg-gray-50'
+}
+
+const dayStrip = computed(() => {
+  const base = startOfDay(new Date())
+  const list = []
+  for (let i = -DAY_STRIP_RADIUS; i <= 0; i++) {
+    const date = addDays(base, i)
+    list.push({
+      key: dateKey(date),
+      date,
+      weekday: date.toLocaleDateString(undefined, { weekday: 'short' }),
+      dayNum: date.getDate(),
+      monthShort: date.toLocaleDateString(undefined, { month: 'short' }),
+    })
+  }
+  return list
+})
+
+function scrollSelectedIntoView(behavior = 'smooth') {
+  nextTick(() => {
+    const strip = dayStripRef.value
+    if (!strip || filterMode.value !== 'day') return
+    const key = dateKey(selectedDate.value)
+    const el = strip.querySelector(`[data-day-key="${key}"]`)
+    el?.scrollIntoView({ inline: 'center', block: 'nearest', behavior })
+  })
+}
+
+function onStripTouchStart(e) {
+  if (e.touches.length !== 1) return
+  stripTouchY0 = e.touches[0].clientY
+  stripTouchX0 = e.touches[0].clientX
+}
+
+function onStripTouchMove(e) {
+  if (e.touches.length !== 1 || filterMode.value === 'all' || calendarExpanded.value) return
+  const y = e.touches[0].clientY
+  const x = e.touches[0].clientX
+  const dy = y - stripTouchY0
+  const dx = x - stripTouchX0
+  if (dy > 56 && dy > Math.abs(dx) * 1.25) {
+    calendarExpanded.value = true
+    stripTouchY0 = y
+    stripTouchX0 = x
+  }
+}
+
+function onStripTouchEnd() {
+  stripTouchY0 = 0
+  stripTouchX0 = 0
+}
+
+function selectDay(date) {
+  const d = startOfDay(date)
+  if (d > startOfDay(new Date())) return
+  selectedDate.value = d
+  pickerDate.value = new Date(selectedDate.value)
+  scrollSelectedIntoView()
+}
+
+function onPickerDateChange() {
+  if (filterMode.value !== 'day') return
+  if (!pickerDate.value) return
+  let d = startOfDay(pickerDate.value)
+  const maxDay = startOfDay(new Date())
+  if (d > maxDay) {
+    d = maxDay
+    pickerDate.value = new Date(d)
+  }
+  selectedDate.value = d
+  scrollSelectedIntoView()
+}
+
+watch(filterMode, (mode) => {
+  if (mode === 'all') {
+    calendarExpanded.value = false
+  } else if (mode === 'range') {
+    calendarExpanded.value = true
+  }
+})
+
+watch(selectedDate, (d) => {
+  pickerDate.value = new Date(d)
+})
 
 const totalSales = computed(() => {
   return orders.value.reduce((sum, order) => sum + parseFloat(order.total_amount), 0)
@@ -219,6 +428,13 @@ const totalSales = computed(() => {
 
 const totalOrders = computed(() => {
   return orders.value.length
+})
+
+const bunSoldCount = computed(() => {
+  return itemSales.value.reduce((sum, item) => {
+    const isTea = item.name.toLowerCase().includes('tea') || item.name.toLowerCase().includes('chai')
+    return isTea ? sum : sum + item.quantity
+  }, 0)
 })
 
 const mostSoldItem = computed(() => {
@@ -408,56 +624,54 @@ const quantityChartOptions = computed(() => {
 })
 
 const getDateRange = () => {
-  const now = new Date()
-  let start, end
-  
-  switch (period.value) {
-    case 'today':
-      start = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-      end = now
-      break
-    case 'yesterday':
-      const yesterday = new Date(now)
-      yesterday.setDate(now.getDate() - 1)
-      start = new Date(yesterday.getFullYear(), yesterday.getMonth(), yesterday.getDate())
-      end = new Date(yesterday.getFullYear(), yesterday.getMonth(), yesterday.getDate(), 23, 59, 59, 999)
-      break
-    case 'custom':
-      if (customStartDate.value) {
-        // Set start date to beginning of selected day
-        start = new Date(customStartDate.value)
-        start.setHours(0, 0, 0, 0)
-        // Set end date to end of selected day
-        end = new Date(customStartDate.value)
-        end.setHours(23, 59, 59, 999)
-      } else {
-        // If date not selected, return null to prevent fetching
-        return { start: null, end: null }
-      }
-      break
-    case 'all':
-      // No date filter - return null to fetch all records
-      return { start: null, end: null }
-    default:
-      start = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-      end = now
+  if (filterMode.value === 'all') {
+    return { start: null, end: null }
   }
-  
+  if (filterMode.value === 'day') {
+    const start = new Date(selectedDate.value)
+    start.setHours(0, 0, 0, 0)
+    const end = new Date(selectedDate.value)
+    end.setHours(23, 59, 59, 999)
+    return { start: start.toISOString(), end: end.toISOString() }
+  }
+  const r = rangeModel.value
+  if (!r || !Array.isArray(r) || !r[0]) {
+    return { start: null, end: null }
+  }
+  let a = startOfDay(r[0])
+  let b = r[1] != null ? startOfDay(r[1]) : a
+  const maxD = startOfDay(new Date())
+  if (a > maxD) a = maxD
+  if (b > maxD) b = maxD
+  if (a > b) {
+    const t = a
+    a = b
+    b = t
+  }
+  const start = new Date(a)
+  start.setHours(0, 0, 0, 0)
+  const end = new Date(b)
+  end.setHours(23, 59, 59, 999)
   return { start: start.toISOString(), end: end.toISOString() }
 }
 
-const handlePeriodChange = () => {
-  // Reset custom date when switching away from custom
-  if (period.value !== 'custom') {
-    customStartDate.value = null
-  }
-  fetchReports()
-}
+const fetchDailyBun = async () => {
+  try {
+    if (filterMode.value !== 'day') {
+      dailyBunTotal.value = null
+      return
+    }
+    const day = dateKey(selectedDate.value)
+    const { data, error } = await supabase
+      .from('daily_bun_shop')
+      .select('bun_count')
+      .eq('bun_date', day)
+      .maybeSingle()
 
-const handleCustomDateChange = () => {
-  // Fetch reports when date is selected
-  if (customStartDate.value) {
-    fetchReports()
+    dailyBunTotal.value = data?.bun_count ?? null
+  } catch (err) {
+    console.error('Error fetching daily bun:', err)
+    dailyBunTotal.value = null
   }
 }
 
@@ -465,13 +679,16 @@ const fetchReports = async () => {
   loading.value = true
   try {
     const { start, end } = getDateRange()
-    
-    // For custom date, don't fetch if date is not selected
-    if (period.value === 'custom' && (!start || !end)) {
+
+    fetchDailyBun()
+
+    if (filterMode.value === 'range' && (!start || !end)) {
       loading.value = false
+      orders.value = []
+      itemSales.value = []
       return
     }
-    
+
     // Fetch orders
     let query = supabase
       .from('orders')
@@ -535,6 +752,10 @@ const fetchReports = async () => {
   }
 }
 
+watch([filterMode, selectedDate, rangeModel], () => {
+  fetchReports()
+}, { deep: true })
+
 const handleLogout = async () => {
   if (confirm('Are you sure you want to logout?')) {
     try {
@@ -548,5 +769,6 @@ const handleLogout = async () => {
 
 onMounted(() => {
   fetchReports()
+  scrollSelectedIntoView('auto')
 })
 </script>

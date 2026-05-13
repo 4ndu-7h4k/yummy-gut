@@ -17,31 +17,58 @@
         </div>
       </div>
       
-      <!-- Date Filter Buttons -->
-      <div class="flex gap-2 px-4 pb-3 pt-2">
+    </div>
+
+    <!-- Day strip + pull-down calendar -->
+    <div
+      class="px-2 py-3 bg-[#F5F5F7] border-b border-gray-200"
+      @touchstart="onStripTouchStart"
+      @touchmove="onStripTouchMove"
+      @touchend="onStripTouchEnd"
+    >
+      <div class="flex items-center justify-between px-2 mb-2">
+        <p class="text-xs text-gray-500 select-none">
+          Swipe dates · Pull down for calendar
+        </p>
         <Button
-          label="Today"
-          :severity="dateFilter === 'today' ? 'primary' : 'secondary'"
-          :outlined="dateFilter !== 'today'"
+          type="button"
+          :icon="calendarExpanded ? 'pi pi-chevron-up' : 'pi pi-chevron-down'"
+          severity="secondary"
           size="small"
-          @click="setDateFilter('today')"
-          class="flex-1"
+          outlined
+          v-tooltip.top="calendarExpanded ? 'Hide calendar' : 'Show calendar'"
+          @click="calendarExpanded = !calendarExpanded"
+          :pt="{ root: { class: 'p-2' } }"
         />
-        <Button
-          label="Yesterday"
-          :severity="dateFilter === 'yesterday' ? 'primary' : 'secondary'"
-          :outlined="dateFilter !== 'yesterday'"
-          size="small"
-          @click="setDateFilter('yesterday')"
-          class="flex-1"
-        />
-        <Button
-          label="All"
-          :severity="dateFilter === 'all' ? 'primary' : 'secondary'"
-          :outlined="dateFilter !== 'all'"
-          size="small"
-          @click="setDateFilter('all')"
-          class="flex-1"
+      </div>
+
+      <div
+        ref="dayStripRef"
+        class="flex gap-1 overflow-x-auto pb-1 scrollbar-thin snap-x snap-mandatory touch-pan-x"
+        style="-webkit-overflow-scrolling: touch"
+      >
+        <button
+          v-for="d in dayStrip"
+          :key="d.key"
+          type="button"
+          :data-day-key="d.key"
+          class="flex flex-col items-center justify-center min-w-[calc(100%/7)] max-w-[calc(100%/7)] shrink-0 snap-center rounded-xl py-2 px-1 border transition-colors touch-manipulation"
+          :class="dayStripChipClass(d)"
+          @click="selectDay(d.date)"
+        >
+          <span class="text-[10px] uppercase tracking-wide opacity-80">{{ d.weekday }}</span>
+          <span class="text-lg font-semibold leading-tight">{{ d.dayNum }}</span>
+          <span class="text-[10px] opacity-80">{{ d.monthShort }}</span>
+        </button>
+      </div>
+
+      <div v-if="calendarExpanded" class="mt-3 flex justify-center px-1">
+        <Calendar
+          v-model="pickerDate"
+          inline
+          :maxDate="calendarMaxDate"
+          class="w-full max-w-md"
+          @update:modelValue="onPickerDateChange"
         />
       </div>
     </div>
@@ -113,7 +140,7 @@
 </template>
 
 <script setup>
-import { onMounted, ref } from 'vue'
+import { ref, computed, onMounted, watch, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { useOrders } from '@/composables/useOrders'
 import { useCart } from '@/composables/useCart'
@@ -121,26 +148,144 @@ import { useToast } from 'primevue/usetoast'
 import Button from 'primevue/button'
 import Card from 'primevue/card'
 import ProgressSpinner from 'primevue/progressspinner'
+import Calendar from 'primevue/calendar'
 import QRCodeModal from './QRCodeModal.vue'
 import BottomNav from './BottomNav.vue'
 
-const toast = useToast()
+const DAY_STRIP_RADIUS = 120
 
+const toast = useToast()
 const router = useRouter()
 const showQRModal = ref(false)
 const { orders, loading, fetchOrders, deleteOrder, setEditingOrder } = useOrders()
 const { loadCart } = useCart()
 
-// Date filter state (default to 'today')
-const dateFilter = ref('today')
-
-const setDateFilter = async (filter) => {
-  dateFilter.value = filter
-  await fetchOrders(50, filter)
+function startOfDay(d) {
+  const x = new Date(d)
+  x.setHours(0, 0, 0, 0)
+  return x
 }
 
+function addDays(d, n) {
+  const x = new Date(d)
+  x.setDate(x.getDate() + n)
+  return startOfDay(x)
+}
+
+function dateKey(d) {
+  const x = startOfDay(d)
+  return `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, '0')}-${String(x.getDate()).padStart(2, '0')}`
+}
+
+function isSameDay(a, b) {
+  return dateKey(a) === dateKey(b)
+}
+
+function isToday(d) {
+  return isSameDay(d, new Date())
+}
+
+const calendarMaxDate = computed(() => {
+  const x = startOfDay(new Date())
+  x.setHours(23, 59, 59, 999)
+  return x
+})
+
+const selectedDate = ref(startOfDay(new Date()))
+const pickerDate = ref(new Date(selectedDate.value))
+const calendarExpanded = ref(false)
+const dayStripRef = ref(null)
+
+let stripTouchY0 = 0
+let stripTouchX0 = 0
+
+const dayStrip = computed(() => {
+  const base = startOfDay(new Date())
+  const list = []
+  for (let i = -DAY_STRIP_RADIUS; i <= 0; i++) {
+    const date = addDays(base, i)
+    list.push({
+      key: dateKey(date),
+      date,
+      weekday: date.toLocaleDateString(undefined, { weekday: 'short' }),
+      dayNum: date.getDate(),
+      monthShort: date.toLocaleDateString(undefined, { month: 'short' }),
+    })
+  }
+  return list
+})
+
+function dayStripChipClass(d) {
+  const selected = isSameDay(d.date, selectedDate.value)
+  if (selected) {
+    if (isToday(d.date)) {
+      return 'bg-blue-400 text-white border-blue-400 shadow-sm'
+    }
+    return 'bg-blue-400 text-white border-blue-400 shadow-sm'
+  }
+  return 'bg-white text-gray-800 border-gray-200 active:bg-gray-50'
+}
+
+function scrollSelectedIntoView(behavior = 'smooth') {
+  nextTick(() => {
+    const strip = dayStripRef.value
+    if (!strip) return
+    const key = dateKey(selectedDate.value)
+    const el = strip.querySelector(`[data-day-key="${key}"]`)
+    el?.scrollIntoView({ inline: 'center', block: 'nearest', behavior })
+  })
+}
+
+function selectDay(date) {
+  const d = startOfDay(date)
+  if (d > startOfDay(new Date())) return
+  selectedDate.value = d
+  pickerDate.value = new Date(d)
+  scrollSelectedIntoView()
+}
+
+function onPickerDateChange() {
+  if (!pickerDate.value) return
+  let d = startOfDay(pickerDate.value)
+  const maxDay = startOfDay(new Date())
+  if (d > maxDay) {
+    d = maxDay
+    pickerDate.value = new Date(d)
+  }
+  selectedDate.value = d
+  scrollSelectedIntoView()
+}
+
+function onStripTouchStart(e) {
+  if (e.touches.length !== 1) return
+  stripTouchY0 = e.touches[0].clientY
+  stripTouchX0 = e.touches[0].clientX
+}
+
+function onStripTouchMove(e) {
+  if (e.touches.length !== 1 || calendarExpanded.value) return
+  const dy = e.touches[0].clientY - stripTouchY0
+  const dx = e.touches[0].clientX - stripTouchX0
+  if (dy > 56 && dy > Math.abs(dx) * 1.25) {
+    calendarExpanded.value = true
+    stripTouchY0 = e.touches[0].clientY
+    stripTouchX0 = e.touches[0].clientX
+  }
+}
+
+function onStripTouchEnd() {
+  stripTouchY0 = 0
+  stripTouchX0 = 0
+}
+
+watch(selectedDate, (d) => {
+  pickerDate.value = new Date(d)
+  fetchOrders(50, d)
+})
+
 onMounted(() => {
-  fetchOrders(50, 'today')
+  fetchOrders(50, selectedDate.value)
+  scrollSelectedIntoView('auto')
 })
 
 const handleLoadOrder = (order) => {

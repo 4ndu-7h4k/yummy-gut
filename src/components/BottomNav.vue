@@ -36,6 +36,7 @@
         <i class="pi pi-chart-bar text-xl mb-1"></i>
         <span class="font-medium">Reports</span>
       </router-link>
+
     </div>
   </nav>
 </template>

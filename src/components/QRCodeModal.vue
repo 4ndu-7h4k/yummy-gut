@@ -188,6 +188,8 @@ const isVisible = computed({
 
 const { fetchLatestQRCode } = useQRCode()
 
+const LOCAL_STORAGE_KEY = 'yummy-gut-qr-image'
+
 const qrDataUrl = ref(null)
 const uploadedImage = ref(null)
 const qrText = ref('')
@@ -200,9 +202,22 @@ const loadingQR = ref(false)
 const showReplaceOptions = ref(false)
 let countdownTimer = null
 
+const loadCachedQRCode = () => {
+  if (typeof window === 'undefined') return
+
+  const cached = window.localStorage.getItem(LOCAL_STORAGE_KEY)
+  if (cached) {
+    existingQRCode.value = existingQRCode.value || { type: 'cached' }
+    existingQRCodeImage.value = cached
+  }
+}
+
 watch(() => props.visible, async (newVal) => {
   if (newVal) {
-    // Load existing QR code when modal opens
+    // Load cached QR code immediately for faster display
+    loadCachedQRCode()
+
+    // Then load existing QR code from backend when modal opens
     await loadExistingQRCode()
     
     // Start countdown if QR code is displayed
@@ -284,6 +299,11 @@ const generateQR = async () => {
         light: '#FFFFFF'
       }
     })
+
+    // Persist generated QR in local storage for faster future loading
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem(LOCAL_STORAGE_KEY, dataUrl)
+    }
     qrDataUrl.value = dataUrl
     showGenerateForm.value = false
     
@@ -321,6 +341,11 @@ const handleFileUpload = (event) => {
   const reader = new FileReader()
   reader.onload = (e) => {
     uploadedImage.value = e.target.result
+
+    // Persist uploaded QR image in local storage for faster future loading
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem(LOCAL_STORAGE_KEY, e.target.result)
+    }
     
     // Emit event for uploading to Supabase if needed
     emit('qr-uploaded', {
