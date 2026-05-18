@@ -59,6 +59,18 @@ CREATE TABLE qr_codes (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- Individual expenses (Juby, Anandu)
+CREATE TABLE individual_expenses (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  person VARCHAR(50) NOT NULL CHECK (person IN ('juby', 'anandu')),
+  expense_date DATE NOT NULL,
+  amount DECIMAL(10, 2) NOT NULL CHECK (amount >= 0),
+  notes TEXT,
+  settled BOOLEAN NOT NULL DEFAULT false,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
 -- Daily bun taken from shop (one row per calendar day: total count and value)
 CREATE TABLE daily_bun_shop (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -77,6 +89,8 @@ CREATE INDEX idx_order_items_order_id ON order_items(order_id);
 CREATE INDEX idx_order_items_item_id ON order_items(item_id);
 CREATE INDEX idx_draft_orders_created_at ON draft_orders(created_at DESC);
 CREATE INDEX idx_qr_codes_created_at ON qr_codes(created_at DESC);
+CREATE INDEX idx_individual_expenses_person ON individual_expenses(person);
+CREATE INDEX idx_individual_expenses_expense_date ON individual_expenses(expense_date DESC);
 CREATE INDEX idx_daily_bun_shop_bun_date ON daily_bun_shop(bun_date DESC);
 
 -- Function to update updated_at timestamp
@@ -101,6 +115,9 @@ CREATE TRIGGER update_draft_orders_updated_at BEFORE UPDATE ON draft_orders
 CREATE TRIGGER update_qr_codes_updated_at BEFORE UPDATE ON qr_codes
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+CREATE TRIGGER update_individual_expenses_updated_at BEFORE UPDATE ON individual_expenses
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
 CREATE TRIGGER update_daily_bun_shop_updated_at BEFORE UPDATE ON daily_bun_shop
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
@@ -111,6 +128,7 @@ ALTER TABLE orders ENABLE ROW LEVEL SECURITY;
 ALTER TABLE order_items ENABLE ROW LEVEL SECURITY;
 ALTER TABLE draft_orders ENABLE ROW LEVEL SECURITY;
 ALTER TABLE qr_codes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE individual_expenses ENABLE ROW LEVEL SECURITY;
 ALTER TABLE daily_bun_shop ENABLE ROW LEVEL SECURITY;
 
 -- Policy: Allow all operations for authenticated users (adjust based on your auth setup)
@@ -128,6 +146,9 @@ CREATE POLICY "Allow all operations on draft_orders" ON draft_orders
   FOR ALL USING (true) WITH CHECK (true);
 
 CREATE POLICY "Allow all operations on qr_codes" ON qr_codes
+  FOR ALL USING (true) WITH CHECK (true);
+
+CREATE POLICY "Allow all operations on individual_expenses" ON individual_expenses
   FOR ALL USING (true) WITH CHECK (true);
 
 CREATE POLICY "Allow all operations on daily_bun_shop" ON daily_bun_shop

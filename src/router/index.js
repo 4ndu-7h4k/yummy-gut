@@ -5,6 +5,7 @@ import ItemsManagement from "../components/ItemsManagement.vue";
 import OrderHistory from "../components/OrderHistory.vue";
 import Reports from "../components/Reports.vue";
 import Expenses from "../components/Expenses.vue";
+import IndividualExpenses from "../components/IndividualExpenses.vue";
 import Login from "../components/Login.vue";
 
 const routes = [
@@ -42,6 +43,12 @@ const routes = [
     path: "/expenses",
     name: "Expenses",
     component: Expenses,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: "/individual-expenses",
+    name: "IndividualExpenses",
+    component: IndividualExpenses,
     meta: { requiresAuth: true },
   },
 ];

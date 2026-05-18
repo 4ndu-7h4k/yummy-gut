@@ -22,6 +22,14 @@
             </router-link>
           </div>
         </div>
+        <router-link
+          to="/individual-expenses"
+          class="flex items-center justify-center w-9 h-9 rounded-full transition-all duration-200"
+          :class="$route.path === '/individual-expenses' ? 'bg-ios-blue text-white shadow-sm' : 'bg-white text-gray-600 border border-gray-200'"
+          v-tooltip.top="'People expenses'"
+        >
+          <i class="pi pi-user text-sm"></i>
+        </router-link>
       </div>
     </div>
 
